@@ -1,59 +1,116 @@
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>GalaxyX - Order Confirmation</title>
-    <link rel="stylesheet" href="../css/confirmation.css" />
-    <link rel="icon" href="../img/pls7.png">
-  </head>
-  <body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GalaxyX - Order Confirmation</title>
+  <link rel="stylesheet" href="../css/confirmation.css" />
+  <link rel="icon" href="../img/pls7.png">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">GALAXYX</div>
+    <nav>
+      <a href="../html/after-login.html">Home</a>
+      <a href="../php/trip.php">Trips</a>
+      <a href="../php/store.php">Store</a>
+      <a href="../html/vr-experience.html">VR</a>
+      <a href="../php/courses.php">Courses</a>
+      <a href="../html/cart.html">Cart (<span id="cart-count">0</span>)</a>
+      <a href="../html/user-dashboard.html">My Account</a>
+    </nav>
+  </header>
 
-    <!-- Header -->
-    <header class="header">
-      <div class="logo">GALAXYX</div>
-      <nav>
-        <a href="../html/after-login.html">Home</a>
-        <a href="../html/trips-after-login.html">Trips</a>
-        <a href="../html/store-after-login.html">Store</a>
-        <a href="../html/vr-experience.html">VR</a>
-        <a href="../html/courses-after-login.html">Courses</a>
-        <a href="../html/cart.html">Cart (<span id="cart-count">0</span>)</a>
-        <a href="../html/user-dashboard.html">My Account</a>
-      </nav>
-    </header>
+  <!-- Confirmation Section -->
+  <section class="confirmation-section">
+    <h1>Order Confirmed!</h1>
+    <p>Thank you for your order. We are processing your order and will send you an email with the details shortly.</p>
 
-    <!-- Confirmation Section -->
-    <section class="confirmation-section">
-      <h1>Order Confirmed!</h1>
-      <p>Thank you for your order. Your order is being processed, and we will send you an email with the details shortly.</p>
+    <div class="order-summary">
+      <h2>Order Summary</h2>
+      <p><strong>Order Number:</strong> <span id="order-number"></span></p>
+      <p><strong>Order Date:</strong> <span id="order-date"></span></p>
 
-      <div class="order-summary">
-        <h2>Order Summary</h2>
-        <p><strong>Order Number:</strong> #123456</p>
+      <h3>Ordered Items</h3>
+      <div id="ordered-items"></div>
 
-        <h3>Items Ordered</h3>
-        <ul>
-          <li>Space Exploration 101 - $300</li>
-          <li>Advanced Astrophysics - $450</li>
-        </ul>
+      <p><strong>Total Amount:</strong> <span id="total-price"></span></p>
+    </div>
 
-        <p><strong>Total Price:</strong> $750</p>
-      </div>
+    <div class="order-status">
+      <h3>Order Status: <span id="status" class="status"></span></h3>
+    </div>
 
-      <div class="order-status">
-        <h3>Order Status: <span class="status">Processing</span></h3>
-      </div>
+    <p>If you have any questions or need assistance, feel free to contact us at <a href="mailto:support@galaxyx.com" class="contact-link">support@galaxyx.com</a></p>
+    <a href="../html/after-login.html" class="btn">Back to Home</a>
+  </section>
 
-    <p>If you have any questions or need assistance, feel free to reach out to us at <a href="mailto:support@galaxyx.com" class="contact-link">support@galaxyx.com</a>. We're here to help!</p>
-      <a href="../html/after-login.html" class="btn">Back to Home</a>
-    </section>
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2025 GalaxyX. All Rights Reserved.</p>
+  </footer>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <p>© 2025 GalaxyX. All Rights Reserved.</p>
-    </footer>
+  <script src="../js/cart.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get order ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderId = urlParams.get('order_id');
 
-    <script src="../js/cart.js"></script>
-  </body>
-  </html>
+      if (!orderId) {
+        window.location.href = 'after-login.html';
+        return;
+      }
+
+      // Fetch order details
+      fetch(`../php/get_order_details.php?order_id=${orderId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            const orderDetails = data.data;
+            
+            // Update order information
+            document.getElementById('order-number').textContent = `#${orderDetails.order_id}`;
+            document.getElementById('order-date').textContent = new Date(orderDetails.order_date).toLocaleString();
+            document.getElementById('total-price').textContent = `$${orderDetails.total_amount.toFixed(2)}`;
+            document.getElementById('status').textContent = orderDetails.status;
+
+            // Display ordered items
+            const orderedItemsContainer = document.getElementById('ordered-items');
+            orderedItemsContainer.innerHTML = ''; // Clear previous content
+            orderDetails.items.forEach(item => {
+              const itemElement = document.createElement('div');
+              itemElement.classList.add('ordered-item');
+              itemElement.innerHTML = `
+                <img src="../img/${item.image}" alt="${item.name}">
+                <div class="item-details">
+                  <h4>${item.name}</h4>
+                  <p>Quantity: ${item.quantity}</p>
+                  <p>Price: $${item.price.toFixed(2)}</p>
+                </div>
+              `;
+              orderedItemsContainer.appendChild(itemElement);
+            });
+          } else {
+            // عرض رسالة الخطأ في الصفحة
+            document.getElementById('order-number').textContent = 'Error';
+            document.getElementById('order-date').textContent = '-';
+            document.getElementById('total-price').textContent = '-';
+            document.getElementById('status').textContent = 'Error';
+            document.getElementById('ordered-items').innerHTML = `<p class="error">${data.message || 'Error loading order details'}</p>`;
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          // عرض رسالة الخطأ في الصفحة
+          document.getElementById('order-number').textContent = 'Error';
+          document.getElementById('order-date').textContent = '-';
+          document.getElementById('total-price').textContent = '-';
+          document.getElementById('status').textContent = 'Error';
+          document.getElementById('ordered-items').innerHTML = '<p class="error">Error loading order details. Please try again later.</p>';
+        });
+    });
+  </script>
+</body>
+</html>

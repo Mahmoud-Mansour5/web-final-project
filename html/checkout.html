@@ -1,74 +1,146 @@
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>GalaxyX - Checkout</title>
-    <link rel="stylesheet" href="../css/checkout.css" />
-    <link rel="icon" href="../img/pls6.png">
-  </head>
-  <body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GalaxyX - Checkout</title>
+  <link rel="stylesheet" href="../css/checkout.css" />
+  <link rel="icon" href="../img/pls6.png">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">GALAXYX</div>
+    <nav>
+      <a href="../html/after-login.html">Home</a>
+      <a href="../php/trip.php">Trips</a>
+      <a href="../php/store.php">Store</a>
+      <a href="../html/vr-experience.html">VR</a>
+      <a href="../php/courses.php">Courses</a>
+      <a href="../html/cart.html">Cart (<span id="cart-count">0</span>)</a>
+    </nav>
+  </header>
 
-    <!-- Header -->
-    <header class="header">
-      <div class="logo">GALAXYX</div>
-      <nav>
-        <a href="../html/index.html">Home</a>
-        <a href="../html/trips.html">Trips</a>
-        <a href="../html/store.html">Store</a>
-        <a href="../html/vr-experience.html">VR</a>
-        <a href="../html/courses.html">Courses</a>
-        <a href="../html/cart.html">Cart (<span id="cart-count">0</span>)</a>
-      </nav>
-    </header>
+  <!-- Checkout Form Section -->
+  <section class="checkout-section">
+    <h1>Checkout</h1>
+    <div id="cart-summary">
+      <h2>Order Summary</h2>
+      <div id="cart-items"></div>
+      <div class="total">
+        <strong>Total Amount: </strong>
+        <span id="total-amount">$0.00</span>
+      </div>
+    </div>
 
-    <!-- Checkout Form Section -->
-    <section class="checkout-section">
-      <h1>Checkout</h1>
-      <form action="" method="POST" class="checkout-form">
-        <label for="name">Full Name</label>
-        <input type="text" id="name" name="name" required>
+    <form id="checkout-form" class="checkout-form">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" name="name" required>
 
-        <label for="email">Email Address</label>
-        <input type="email" id="email" name="email" required>
+      <label for="email">Email Address</label>
+      <input type="email" id="email" name="email" required>
 
-        <label for="address">Shipping Address</label>
-        <textarea id="address" name="address" rows="3" required></textarea>
+      <label for="address">Shipping Address</label>
+      <textarea id="address" name="address" rows="3" required></textarea>
 
-        <label for="payment">Payment Method</label>
-        <select id="payment" name="payment" required>
-          <option value="">Select a payment method</option>
-          <option value="card">Credit/Debit Card</option>
-          <option value="paypal">PayPal</option>
-          <option value="crypto">Cryptocurrency</option>
-        </select>
+      <label for="payment">Payment Method</label>
+      <select id="payment" name="payment" required>
+        <option value="">Select Payment Method</option>
+        <option value="card">Credit/Debit Card</option>
+        <option value="paypal">PayPal</option>
+        <option value="crypto">Cryptocurrency</option>
+      </select>
 
-        <!-- Button to submit form -->
-        <button type="submit" class="btn" id="go" onclick="conf()" >Place Order</button>
-          <!--& Redirect to confirmation page after form submission 
-                  خلي بالك ده هتعمله في الباك بحيث لما اليوزر يكمل عمليه الدفع 
-                  هتعمله ريديركت على صفحه التاكيد
-          <?php
-        header("Location: ../html/confirmation.html");
-        exit();
-          ?> -->
-          
-      </form>
-    </section>
+      <div id="message" class="message"></div>
+      <button type="submit" class="btn">Place Order</button>
+    </form>
+  </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <p>© 2025 GalaxyX. All Rights Reserved.</p>
-    </footer>
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2025 GalaxyX. All Rights Reserved.</p>
+  </footer>
 
-    <script>
-      function conf() {
-          alert("Your order has been placed successfully!")
-          window.location.href = "../html/confirmation.html";
-      }
-    </script>
+  <script src="../js/cart.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load user data if logged in
+      fetch('../php/user-dashboard.php')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('name').value = data.name || '';
+          document.getElementById('email').value = data.email || '';
+          document.getElementById('address').value = data.address || '';
+        })
+        .catch(error => console.error('Error loading user data:', error));
 
-    <script src="../js/cart.js"></script>
+      // Display cart items
+      const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
+      const cartItemsContainer = document.getElementById('cart-items');
+      let totalAmount = 0;
 
-  </body>
-  </html>
+      cartItems.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        totalAmount += itemTotal;
+        
+        const itemElement = document.createElement('div');
+        itemElement.classList.add('cart-item');
+        itemElement.innerHTML = `
+          <span>${item.name}</span>
+          <span>Quantity: ${item.quantity}</span>
+          <span>$${itemTotal.toFixed(2)}</span>
+        `;
+        cartItemsContainer.appendChild(itemElement);
+      });
+
+      document.getElementById('total-amount').textContent = `$${totalAmount.toFixed(2)}`;
+
+      // Handle form submission
+      document.getElementById('checkout-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const messageDiv = document.getElementById('message');
+        
+        if (cartItems.length === 0) {
+          messageDiv.innerHTML = '<div class="error">Shopping cart is empty</div>';
+          return;
+        }
+
+        // التحقق من إدخال عنوان الشحن
+        const shippingAddress = document.getElementById('address').value.trim();
+        if (!shippingAddress) {
+          messageDiv.innerHTML = '<div class="error">Please enter your shipping address</div>';
+          return;
+        }
+
+        // Prepare order data
+        const orderData = new FormData();
+        orderData.append('cart_items', JSON.stringify(cartItems));
+        orderData.append('total_amount', totalAmount);
+        orderData.append('shipping_address', shippingAddress);
+
+        // Process order
+        fetch('../php/process_order.php', {
+          method: 'POST',
+          body: orderData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            // Clear cart
+            localStorage.removeItem('cart');
+            // Redirect to confirmation page
+            window.location.href = `confirmation.html?order_id=${data.order_id}`;
+          } else {
+            messageDiv.innerHTML = `<div class="error">${data.message}</div>`;
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          messageDiv.innerHTML = '<div class="error">Error processing order</div>';
+        });
+      });
+    });
+  </script>
+</body>
+</html>

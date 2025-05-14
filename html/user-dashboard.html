@@ -17,7 +17,7 @@
       <a href="../php/trip.php">Trips</a>
       <a href="../php/store.php">Store</a>
       <a href="cart.html">Cart</a>
-      <a href="login.html">Logout</a>
+      <a href="#" id="logout-btn">Logout</a>
     </nav>
   </header>
 
@@ -31,8 +31,9 @@
       <p><strong>Email:</strong> <span id="email">Loading...</span></p>
       <p><strong>Address:</strong> <span id="address">Loading...</span></p>
     </div>
+
     <h2>Update Your Information</h2>
-    <form action="../php/user-dashboard.php" method="POST" class="update-form">
+    <form id="updateForm" class="update-form">
       <label for="name">Full Name</label>
       <input type="text" id="name-input" name="name" required />
 
@@ -42,10 +43,15 @@
       <label for="address">Shipping Address</label>
       <textarea id="address-input" name="address" rows="3" required></textarea>
 
-
-
+      <div id="message" style="margin: 10px 0;"></div>
       <button type="submit" class="btn">Update Information</button>
     </form>
+
+    <!-- Orders Section -->
+    <div class="orders-section">
+      <h2>Recent Orders</h2>
+      <div id="orders-list">Loading orders...</div>
+    </div>
   </section>
 
   <!-- Footer -->
@@ -54,19 +60,80 @@
   </footer>
 
   <script>
-    // Load user data from PHP
-    fetch('../php/user-dashboard.php')
+    // Load user data
+    function loadUserData() {
+      fetch('../php/user-dashboard.php')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('user-name').textContent = data.name;
+          document.getElementById('name').textContent = data.name;
+          document.getElementById('email').textContent = data.email;
+          document.getElementById('address').textContent = data.address;
+
+          document.getElementById('name-input').value = data.name;
+          document.getElementById('email-input').value = data.email;
+          document.getElementById('address-input').value = data.address;
+
+          // Update orders section
+          if (data.recent_orders && data.recent_orders.length > 0) {
+            const ordersList = data.recent_orders.map(order => `
+              <div class="order-item">
+                <p>Order #${order.order_id}</p>
+                <p>Date: ${new Date(order.order_data).toLocaleDateString()}</p>
+                <p>Total: $${order.total_amount}</p>
+                <p>Status: ${order.status}</p>
+              </div>
+            `).join('');
+            document.getElementById('orders-list').innerHTML = ordersList;
+          } else {
+            document.getElementById('orders-list').innerHTML = 'No recent orders';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading user data:', error);
+          document.getElementById('message').innerHTML = '<div class="error">Error loading user data. Please refresh the page.</div>';
+        });
+    }
+
+    // Handle form submission
+    document.getElementById('updateForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      
+      fetch('../php/user-dashboard.php', {
+        method: 'POST',
+        body: formData
+      })
       .then(response => response.json())
       .then(data => {
-        document.getElementById('user-name').textContent = data.name;
-        document.getElementById('name').textContent = data.name;
-        document.getElementById('email').textContent = data.email;
-        document.getElementById('address').textContent = data.address;
-
-        document.getElementById('name-input').value = data.name;
-        document.getElementById('email-input').value = data.email;
-        document.getElementById('address-input').value = data.address;
+        const messageDiv = document.getElementById('message');
+        if (data.status === 'success') {
+          messageDiv.innerHTML = `<div class="success">${data.message}</div>`;
+          loadUserData(); // Reload user data
+        } else {
+          messageDiv.innerHTML = `<div class="error">${data.message}</div>`;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('message').innerHTML = '<div class="error">An error occurred. Please try again.</div>';
       });
+    });
+
+    // Handle logout
+    document.getElementById('logout-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      fetch('../php/logout.php')
+        .then(() => {
+          window.location.href = 'login.html';
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    });
+
+    // Load initial data
+    loadUserData();
   </script>
 </body>
 </html>

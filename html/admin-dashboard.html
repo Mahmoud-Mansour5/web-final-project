@@ -9,40 +9,65 @@
 </head>
 
 <body>
-
   <!-- Header -->
   <header class="header">
     <div class="logo">GALAXYX - ADMIN</div>
     <nav>
-      <a href="login.html">Logout</a>
+      <span id="admin-name">Admin</span>
+      <a href="#" id="logout-btn">Logout</a>
     </nav>
   </header>
 
   <!-- Admin Dashboard Section -->
   <section class="dashboard-section">
     <h1>Admin Control Panel</h1>
+    
+    <!-- Quick Stats -->
+    <div class="stats-container">
+      <div class="stat-box">
+        <h3>Total Users</h3>
+        <p id="total-users">Loading...</p>
+      </div>
+      <div class="stat-box">
+        <h3>Active Orders</h3>
+        <p id="active-orders">Loading...</p>
+      </div>
+      <div class="stat-box">
+        <h3>Total Products</h3>
+        <p id="total-products">Loading...</p>
+      </div>
+      <div class="stat-box">
+        <h3>Total Revenue</h3>
+        <p id="total-revenue">Loading...</p>
+      </div>
+    </div>
+
     <div class="dashboard-panels">
-      
-      <a href="manage-users.html" class="panel" target="_blank">
+      <a href="manage-users.html" class="panel">
         <h2>Manage Users</h2>
         <p>Add, Edit, or Delete Users</p>
       </a>
 
-      <a href="manage-trips.html" class="panel" target="_blank">
+      <a href="manage-trips.html" class="panel">
         <h2>Manage Trips</h2>
         <p>Create, Edit, or Remove Space Trips</p>
       </a>
 
-      <a href="manage-products.html" class="panel" target="_blank">
+      <a href="manage-products.html" class="panel">
         <h2>Manage Products</h2>
         <p>Control Store Inventory</p>
       </a>
 
-      <a href="manage-courses.html" class="panel" target="_blank">
+      <a href="manage-courses.html" class="panel">
         <h2>Manage Courses</h2>
         <p>Edit, Add, or Renew Training Courses</p>
       </a>
-   
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="recent-activity">
+      <h2>Recent Activity</h2>
+      <div id="activity-list">Loading activity...</div>
     </div>
   </section>
 
@@ -51,5 +76,76 @@
     <p>© 2025 GalaxyX Admin. All Rights Reserved.</p>
   </footer>
 
+  <script>
+    // Load dashboard data
+    function loadDashboardData() {
+      fetch('../php/admin-stats.php')
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            document.getElementById('total-users').textContent = data.users;
+            document.getElementById('active-orders').textContent = data.orders;
+            document.getElementById('total-products').textContent = data.products;
+            document.getElementById('total-revenue').textContent = `$${data.revenue}`;
+            
+            // Update activity list
+            const activityList = document.getElementById('activity-list');
+            if (data.recent_activity && data.recent_activity.length > 0) {
+              activityList.innerHTML = data.recent_activity
+                .map(activity => `
+                  <div class="activity-item">
+                    <span class="activity-time">${new Date(activity.timestamp).toLocaleString()}</span>
+                    <span class="activity-type">${activity.type}</span>
+                    <span class="activity-description">${activity.description}</span>
+                  </div>
+                `)
+                .join('');
+            } else {
+              activityList.innerHTML = 'No recent activity';
+            }
+          } else {
+            console.error('Error loading dashboard data:', data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    }
+
+    // Check admin session and load data
+    function checkAdminSession() {
+      fetch('../php/check-admin.php')
+        .then(response => response.json())
+        .then(data => {
+          if (!data.isAdmin) {
+            window.location.href = 'login.html';
+          } else {
+            document.getElementById('admin-name').textContent = data.name;
+            loadDashboardData();
+          }
+        })
+        .catch(() => {
+          window.location.href = 'login.html';
+        });
+    }
+
+    // Handle logout
+    document.getElementById('logout-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      fetch('../php/logout.php')
+        .then(() => {
+          window.location.href = 'login.html';
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    });
+
+    // Initialize
+    checkAdminSession();
+
+    // Refresh dashboard data every 5 minutes
+    setInterval(loadDashboardData, 300000);
+  </script>
 </body>
 </html>
